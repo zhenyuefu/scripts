@@ -13,7 +13,7 @@ hostname = gw2c-hw-open.longfor.com
 
 cron "3 0 * * *" script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/lhtj.js, tag=龙湖天街签到
 
-http-request ^https?:\/\/gw2c\-hw\-open\.longfor\.com\/lmarketing\-task\-api\-mvc\-prod\/openapi\/task\/v1\/signature\/clock script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/lhtj.js, timeout=60, tag=龙湖天街获取Cookie
+http-request ^https?:\/\/gw2c\-hw\-open\.longfor\.com\/lmarketing\-task\-api\-mvc\-prod\/openapi\/task\/v1\/signature\/clock script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/lhtj.js, timeout=60, tag=龙湖天街获取Cookie
 
 ⚠️【免责声明】
 ------------------------------------------
