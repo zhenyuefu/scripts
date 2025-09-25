@@ -62,6 +62,23 @@ const SIGN_CONFIG = {
   activityNo_APP: "11111111111736501868255956070000",
 };
 
+const CHANNEL_CONFIGS = [
+  {
+    key: "miniProgram",
+    label: "小程序",
+    signActivityNo: SIGN_CONFIG.activityNo,
+    lotteryActivityNo: LOTTERY_CONFIG.activityNo,
+    lotteryComponentNo: LOTTERY_CONFIG.componentNo,
+  },
+  {
+    key: "app",
+    label: "App",
+    signActivityNo: SIGN_CONFIG.activityNo_APP,
+    lotteryActivityNo: LOTTERY_CONFIG.activityNo_APP,
+    lotteryComponentNo: LOTTERY_CONFIG.componentNo_APP,
+  },
+];
+
 //------------------------------------------
 const fetch = async (o) => {
   try {
@@ -99,21 +116,27 @@ async function main() {
     $.title = "";
     $.avatar = "";
 
-    // 签到
-    const reward_num = await signin(user);
-    if ($.ckStatus) {
-      const { shouldDraw } = await lotterySignin(user);
+    let totalReward = 0;
+    for (const channel of CHANNEL_CONFIGS) {
+      if (!$.ckStatus) break;
+      const rewardNum = await signin(user, channel);
+      totalReward += Number.isFinite(Number(rewardNum)) ? Number(rewardNum) : 0;
+      if (!$.ckStatus) break;
+      const { shouldDraw } = await lotterySignin(user, channel);
       if ($.ckStatus && shouldDraw) {
         await $.wait(1000);
-        await lotteryClock(user);
+        await lotteryClock(user, channel);
       }
+    }
+
+    if ($.ckStatus) {
       //查询用户信息
       const { nick_name, growth_value, level, head_portrait } =
         await getUserInfo(user);
       //查询珑珠
       const { balance } = await getBalance(user);
       $.avatar = head_portrait;
-      $.title = `本次运行共获得${reward_num}积分`;
+      $.title = `本次运行共获得${totalReward}积分`;
       DoubleLog(
         `当前用户:${nick_name}\n成长值: ${growth_value}  等级: V${level}  珑珠: ${balance}`,
       );
@@ -126,13 +149,16 @@ async function main() {
 }
 
 //签到
-async function signin(user) {
+async function signin(user, channel = CHANNEL_CONFIGS[0]) {
   try {
+    const userAgentKey = channel?.key || "miniProgram";
+    const activityNo = channel?.signActivityNo || SIGN_CONFIG.activityNo;
+    const labelPrefix = channel?.label ? `[${channel.label}] ` : "";
     const opts = {
       url: "https://gw2c-hw-open.longfor.com/lmarketing-task-api-mvc-prod/openapi/task/v1/signature/clock",
       headers: {
         cookie: user.cookie,
-        "user-agent": userAgent.miniProgram,
+        "user-agent": userAgent[userAgentKey] || userAgent.miniProgram,
         token: user.token,
         "x-lf-dxrisk-token": user["x-lf-dxrisk-token"],
         "x-gaia-api-key": "c06753f1-3e68-437d-b592-b94656ea5517",
@@ -146,25 +172,31 @@ async function signin(user) {
       type: "post",
       dataType: "json",
       body: {
-        activity_no: "11111111111686241863606037740000",
+        activity_no: activityNo,
       },
     };
     const res = await fetch(opts);
     const reward_num =
       res?.data?.is_popup === 1 ? res?.data?.reward_info[0]?.reward_num : 0;
     $.log(
-      `${$.doFlag[res?.data?.is_popup == 1]} ${res?.data?.is_popup == 1 ? `每日签到: 成功, 获得${res?.data?.reward_info[0]?.reward_num}分` : "每日签到: 今日已签到"}\n`,
+      `${$.doFlag[res?.data?.is_popup === 1]} ${labelPrefix}${
+        res?.data?.is_popup === 1
+          ? `每日签到: 成功, 获得${res?.data?.reward_info[0]?.reward_num}分`
+          : "每日签到: 今日已签到"
+      }\n`,
     );
     return reward_num;
   } catch (e) {
     $.log(`⛔️ 每日签到失败！${e}\n`);
+    return 0;
   }
 }
 
-function buildLotteryHeaders(user) {
+function buildLotteryHeaders(user, channel = CHANNEL_CONFIGS[0]) {
+  const userAgentKey = channel?.key || "miniProgram";
   return {
     cookie: user.cookie,
-    "user-agent": userAgent.miniProgram,
+    "user-agent": userAgent[userAgentKey] || userAgent.miniProgram,
     authtoken: user.token,
     "x-lf-dxrisk-token": user["x-lf-dxrisk-token"],
     bucode: user["x-lf-bu-code"],
@@ -177,16 +209,18 @@ function buildLotteryHeaders(user) {
   };
 }
 // 抽奖签到
-async function lotterySignin(user) {
+async function lotterySignin(user, channel = CHANNEL_CONFIGS[0]) {
   try {
+    const labelPrefix = channel?.label ? `[${channel.label}] ` : "";
     const opts = {
       url: LOTTERY_CONFIG.signEndpoint,
-      headers: buildLotteryHeaders(user),
+      headers: buildLotteryHeaders(user, channel),
       type: "post",
       dataType: "json",
       body: {
-        component_no: LOTTERY_CONFIG.componentNo,
-        activity_no: LOTTERY_CONFIG.activityNo,
+        component_no:
+          channel?.lotteryComponentNo || LOTTERY_CONFIG.componentNo,
+        activity_no: channel?.lotteryActivityNo || LOTTERY_CONFIG.activityNo,
       },
     };
     const res = await fetch(opts);
@@ -196,14 +230,14 @@ async function lotterySignin(user) {
     if (code === "0000") {
       const ticket = res?.data?.ticket_times ?? "";
       message = ticket
-        ? `抽奖签到: 成功, 获得${ticket}次抽奖机会`
-        : "抽奖签到: 成功";
+        ? `${labelPrefix}抽奖签到: 成功, 获得${ticket}次抽奖机会`
+        : `${labelPrefix}抽奖签到: 成功`;
       shouldDraw = true;
     } else if (code === "863036") {
-      message = "抽奖签到: 今日已签到";
+      message = `${labelPrefix}抽奖签到: 今日已签到`;
       shouldDraw = true;
     } else {
-      message = `抽奖签到: ${message}`;
+      message = `${labelPrefix}抽奖签到: ${message}`;
     }
     $.log(`${$.doFlag[code === "0000" || code === "863036"]} ${message}\n`);
     $.notifyMsg.push(message);
@@ -215,16 +249,18 @@ async function lotterySignin(user) {
   }
 }
 // 抽奖
-async function lotteryClock(user) {
+async function lotteryClock(user, channel = CHANNEL_CONFIGS[0]) {
   try {
+    const labelPrefix = channel?.label ? `[${channel.label}] ` : "";
     const opts = {
       url: LOTTERY_CONFIG.clickEndpoint,
-      headers: buildLotteryHeaders(user),
+      headers: buildLotteryHeaders(user, channel),
       type: "post",
       dataType: "json",
       body: {
-        component_no: LOTTERY_CONFIG.componentNo,
-        activity_no: LOTTERY_CONFIG.activityNo,
+        component_no:
+          channel?.lotteryComponentNo || LOTTERY_CONFIG.componentNo,
+        activity_no: channel?.lotteryActivityNo || LOTTERY_CONFIG.activityNo,
         batch_no: "",
       },
     };
@@ -237,11 +273,11 @@ async function lotteryClock(user) {
         res?.data?.prizeName ||
         res?.data?.desc ||
         "未知奖品";
-      message = `抽奖成功, 获得${prize}`;
+      message = `${labelPrefix}抽奖成功, 获得${prize}`;
     } else if (code === "863033") {
-      message = "抽奖: 今日已抽奖";
+      message = `${labelPrefix}抽奖: 今日已抽奖`;
     } else {
-      message = `抽奖: ${message}`;
+      message = `${labelPrefix}抽奖: ${message}`;
     }
     $.log(`${$.doFlag[code === "0000"]} ${message}\n`);
     $.notifyMsg.push(message);
