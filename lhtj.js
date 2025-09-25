@@ -41,8 +41,8 @@ const baseUrl = "";
 const _headers = {};
 
 const LOTTERY_CONFIG = {
-  componentNo: "CO15400F29R2ZFJZ",
-  activityNo: "AP25K062Q6YYQ7FX",
+  componentNo: "C114001B57J0XWNC",
+  activityNo: "AP25F082Y9BE1C8Q",
   componentNo_APP: "CC16118V10V3U9HA",
   activityNo_APP: "AP25F082V945THJE",
   signEndpoint:
@@ -53,7 +53,7 @@ const LOTTERY_CONFIG = {
 
 const userAgent = {
   miniProgram:
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.57(0x18003930) NetType/WIFI Language/zh_CN miniProgram/wx50282644351869da",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.63(0x18003f2e) NetType/4G Language/zh_CN miniProgram/wx50282644351869da",
   app: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 &MAIAWebKit_iOS_com.longfor.supera_1.17.4_202509111135_Default_3.2.4.9",
 };
 
@@ -218,8 +218,7 @@ async function lotterySignin(user, channel = CHANNEL_CONFIGS[0]) {
       type: "post",
       dataType: "json",
       body: {
-        component_no:
-          channel?.lotteryComponentNo || LOTTERY_CONFIG.componentNo,
+        component_no: channel?.lotteryComponentNo || LOTTERY_CONFIG.componentNo,
         activity_no: channel?.lotteryActivityNo || LOTTERY_CONFIG.activityNo,
       },
     };
@@ -258,8 +257,7 @@ async function lotteryClock(user, channel = CHANNEL_CONFIGS[0]) {
       type: "post",
       dataType: "json",
       body: {
-        component_no:
-          channel?.lotteryComponentNo || LOTTERY_CONFIG.componentNo,
+        component_no: channel?.lotteryComponentNo || LOTTERY_CONFIG.componentNo,
         activity_no: channel?.lotteryActivityNo || LOTTERY_CONFIG.activityNo,
         batch_no: "",
       },
