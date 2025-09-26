@@ -15,7 +15,7 @@ hostname = app.mixcapp.com
 17 8 * * * https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js, tag=一点万象签到
 
 [rewrite_local]
-^https?:\/\/app\.mixcapp\.com\/mixc\/gateway url script-response-body https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js
+^https?:\/\/app\.mixcapp\.com\/mixc\/gateway url script-request-body https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js
 
 ⚠️【免责声明】
 ------------------------------------------
