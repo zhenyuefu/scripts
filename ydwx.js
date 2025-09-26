@@ -230,7 +230,8 @@ function md5Fallback(input) {
   function convertToWordArray(str) {
     const messageLength = str.length;
     const numberOfWordsTemp1 = messageLength + 8;
-    const numberOfWordsTemp2 = ((numberOfWordsTemp1 - (numberOfWordsTemp1 % 64)) / 64 + 1) * 16;
+    const numberOfWordsTemp2 =
+      ((numberOfWordsTemp1 - (numberOfWordsTemp1 % 64)) / 64 + 1) * 16;
     const wordArray = new Array(numberOfWordsTemp2 - 1).fill(0);
     let byteCount = 0;
     while (byteCount < messageLength) {
@@ -247,17 +248,17 @@ function md5Fallback(input) {
     return wordArray;
   }
   function wordToHex(value) {
-    let hexValue = '';
+    let hexValue = "";
     for (let i = 0; i <= 3; i++) {
       const byte = (value >>> (i * 8)) & 255;
-      const hexByte = '0' + byte.toString(16);
+      const hexByte = "0" + byte.toString(16);
       hexValue += hexByte.substring(hexByte.length - 2, hexByte.length);
     }
     return hexValue;
   }
   function utf8Encode(str) {
-    str = str.replace(/\r\n/g, '\n');
-    let utftext = '';
+    str = str.replace(/\r\n/g, "\n");
+    let utftext = "";
     for (let n = 0; n < str.length; n++) {
       const c = str.charCodeAt(n);
       if (c < 128) {
@@ -370,9 +371,13 @@ function md5Fallback(input) {
     c = addUnsigned(c, CC);
     d = addUnsigned(d, DD);
   }
-  return (wordToHex(a) + wordToHex(b) + wordToHex(c) + wordToHex(d)).toLowerCase();
+  return (
+    wordToHex(a) +
+    wordToHex(b) +
+    wordToHex(c) +
+    wordToHex(d)
+  ).toLowerCase();
 }
-
 
 function buildHeaders(user) {
   return {
@@ -404,7 +409,7 @@ function parseFormBody(body) {
 async function getCookie() {
   if ($request && $request.method === "OPTIONS") return;
   const body = $request?.body;
-  if (!body) throw new Error("获取 Cookie 失败，未找到请求体");
+  if (!body) return;
   const form = parseFormBody(body);
   const lowerForm = ObjectKeys2LowerCase(form);
   const deviceParams = lowerForm.deviceparams;
