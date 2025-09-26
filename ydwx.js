@@ -385,9 +385,9 @@ function buildHeaders(user) {
   return {
     ...DEFAULT_HEADERS,
     ...(user.headers || {}),
-    "User-Agent": user.userAgent || DEFAULT_HEADERS["User-Agent"],
-    Referer: user.referer || DEFAULT_HEADERS.Referer,
-    "Accept-Language": user.language || DEFAULT_HEADERS["Accept-Language"],
+    "User-Agent": DEFAULT_HEADERS["User-Agent"],
+    Referer: DEFAULT_HEADERS.Referer,
+    "Accept-Language": DEFAULT_HEADERS["Accept-Language"],
   };
 }
 
