@@ -118,18 +118,18 @@ async function signin(user, index) {
     const sign = generateSign(user, timestamp);
     const headers = buildHeaders(user);
     const body = {
-      mallNo: user.mallNo || SIGN_CONST.mallNo,
+      mallNo: SIGN_CONST.mallNo,
       appId: SIGN_CONST.appId,
-      platform: user.platform || SIGN_CONST.platform,
-      imei: user.imei || SIGN_CONST.imei,
-      appVersion: user.appVersion || SIGN_CONST.appVersion,
-      osVersion: user.osVersion || SIGN_CONST.osVersion,
+      platform: SIGN_CONST.platform,
+      imei: SIGN_CONST.imei,
+      appVersion: SIGN_CONST.appVersion,
+      osVersion: SIGN_CONST.osVersion,
       action: SIGN_CONST.action,
       apiVersion: SIGN_CONST.apiVersion,
       timestamp,
       deviceParams: user.deviceParams,
       token: user.token,
-      params: user.params || SIGN_CONST.params,
+      params: SIGN_CONST.params,
       sign,
     };
     const res = await fetch({
