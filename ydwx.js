@@ -7,13 +7,15 @@
 获取 Cookie：登录后在一点万象 App 中搜索 mixcapp 请求，定位 https://app.mixcapp.com/mixc/gateway，拦截签到请求体中的 deviceParams 与 token。
 
 
-================ Loon 配置 ================
+================ 配置 ================
 [MITM]
 hostname = app.mixcapp.com
 
-cron "17 8 * * *" script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js, tag=一点万象签到
+[task_local]
+17 8 * * * https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js, tag=一点万象签到
 
-http-request ^https?:\/\/app\.mixcapp\.com\/mixc\/gateway script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js, timeout=60, tag=一点万象获取Cookie
+[rewrite_local]
+^https?:\/\/app\.mixcapp\.com\/mixc\/gateway url script-response-body https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js
 
 ⚠️【免责声明】
 ------------------------------------------
