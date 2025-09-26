@@ -179,8 +179,200 @@ function generateSign(user, timestamp) {
   if (typeof $ === "object" && typeof $.md5 === "function") {
     return $.md5(raw);
   }
-  throw new Error("当前环境无法计算签名，请在 Node.js 环境运行");
+  return md5Fallback(raw);
 }
+
+function md5Fallback(input) {
+  function rotateLeft(value, shift) {
+    return (value << shift) | (value >>> (32 - shift));
+  }
+  function addUnsigned(x, y) {
+    const x4 = x & 2147483648;
+    const y4 = y & 2147483648;
+    const x8 = x & 1073741824;
+    const y8 = y & 1073741824;
+    const result = (x & 1073741823) + (y & 1073741823);
+    if (x8 & y8) return result ^ 2147483648 ^ x4 ^ y4;
+    if (x8 | y8) {
+      if (result & 1073741824) return result ^ 3221225472 ^ x4 ^ y4;
+      return result ^ 1073741824 ^ x4 ^ y4;
+    }
+    return result ^ x4 ^ y4;
+  }
+  function F(x, y, z) {
+    return (x & y) | (~x & z);
+  }
+  function G(x, y, z) {
+    return (x & z) | (y & ~z);
+  }
+  function H(x, y, z) {
+    return x ^ y ^ z;
+  }
+  function I(x, y, z) {
+    return y ^ (x | ~z);
+  }
+  function FF(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(F(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
+  }
+  function GG(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(G(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
+  }
+  function HH(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(H(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
+  }
+  function II(a, b, c, d, x, s, ac) {
+    a = addUnsigned(a, addUnsigned(addUnsigned(I(b, c, d), x), ac));
+    return addUnsigned(rotateLeft(a, s), b);
+  }
+  function convertToWordArray(str) {
+    const messageLength = str.length;
+    const numberOfWordsTemp1 = messageLength + 8;
+    const numberOfWordsTemp2 = ((numberOfWordsTemp1 - (numberOfWordsTemp1 % 64)) / 64 + 1) * 16;
+    const wordArray = new Array(numberOfWordsTemp2 - 1).fill(0);
+    let byteCount = 0;
+    while (byteCount < messageLength) {
+      const wordCount = (byteCount - (byteCount % 4)) / 4;
+      const bytePosition = (byteCount % 4) * 8;
+      wordArray[wordCount] |= str.charCodeAt(byteCount) << bytePosition;
+      byteCount++;
+    }
+    const wordCount = (byteCount - (byteCount % 4)) / 4;
+    const bytePosition = (byteCount % 4) * 8;
+    wordArray[wordCount] |= 128 << bytePosition;
+    wordArray[numberOfWordsTemp2 - 2] = messageLength << 3;
+    wordArray[numberOfWordsTemp2 - 1] = messageLength >>> 29;
+    return wordArray;
+  }
+  function wordToHex(value) {
+    let hexValue = '';
+    for (let i = 0; i <= 3; i++) {
+      const byte = (value >>> (i * 8)) & 255;
+      const hexByte = '0' + byte.toString(16);
+      hexValue += hexByte.substring(hexByte.length - 2, hexByte.length);
+    }
+    return hexValue;
+  }
+  function utf8Encode(str) {
+    str = str.replace(/\r\n/g, '\n');
+    let utftext = '';
+    for (let n = 0; n < str.length; n++) {
+      const c = str.charCodeAt(n);
+      if (c < 128) {
+        utftext += String.fromCharCode(c);
+      } else if (c > 127 && c < 2048) {
+        utftext += String.fromCharCode((c >> 6) | 192);
+        utftext += String.fromCharCode((c & 63) | 128);
+      } else {
+        utftext += String.fromCharCode((c >> 12) | 224);
+        utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+        utftext += String.fromCharCode((c & 63) | 128);
+      }
+    }
+    return utftext;
+  }
+  let x = [];
+  let a = 1732584193;
+  let b = 4023233417;
+  let c = 2562383102;
+  let d = 271733878;
+  const S11 = 7;
+  const S12 = 12;
+  const S13 = 17;
+  const S14 = 22;
+  const S21 = 5;
+  const S22 = 9;
+  const S23 = 14;
+  const S24 = 20;
+  const S31 = 4;
+  const S32 = 11;
+  const S33 = 16;
+  const S34 = 23;
+  const S41 = 6;
+  const S42 = 10;
+  const S43 = 15;
+  const S44 = 21;
+  input = utf8Encode(input);
+  x = convertToWordArray(input);
+  for (let k = 0; k < x.length; k += 16) {
+    const AA = a;
+    const BB = b;
+    const CC = c;
+    const DD = d;
+    a = FF(a, b, c, d, x[k + 0], S11, 3614090360);
+    d = FF(d, a, b, c, x[k + 1], S12, 3905402710);
+    c = FF(c, d, a, b, x[k + 2], S13, 606105819);
+    b = FF(b, c, d, a, x[k + 3], S14, 3250441966);
+    a = FF(a, b, c, d, x[k + 4], S11, 4118548399);
+    d = FF(d, a, b, c, x[k + 5], S12, 1200080426);
+    c = FF(c, d, a, b, x[k + 6], S13, 2821735955);
+    b = FF(b, c, d, a, x[k + 7], S14, 4249261313);
+    a = FF(a, b, c, d, x[k + 8], S11, 1770035416);
+    d = FF(d, a, b, c, x[k + 9], S12, 2336552879);
+    c = FF(c, d, a, b, x[k + 10], S13, 4294925233);
+    b = FF(b, c, d, a, x[k + 11], S14, 2304563134);
+    a = FF(a, b, c, d, x[k + 12], S11, 1804603682);
+    d = FF(d, a, b, c, x[k + 13], S12, 4254626195);
+    c = FF(c, d, a, b, x[k + 14], S13, 2792965006);
+    b = FF(b, c, d, a, x[k + 15], S14, 1236535329);
+    a = GG(a, b, c, d, x[k + 1], S21, 4129170786);
+    d = GG(d, a, b, c, x[k + 6], S22, 3225465664);
+    c = GG(c, d, a, b, x[k + 11], S23, 643717713);
+    b = GG(b, c, d, a, x[k + 0], S24, 3921069994);
+    a = GG(a, b, c, d, x[k + 5], S21, 3593408605);
+    d = GG(d, a, b, c, x[k + 10], S22, 38016083);
+    c = GG(c, d, a, b, x[k + 15], S23, 3634488961);
+    b = GG(b, c, d, a, x[k + 4], S24, 3889429448);
+    a = GG(a, b, c, d, x[k + 9], S21, 568446438);
+    d = GG(d, a, b, c, x[k + 14], S22, 3275163606);
+    c = GG(c, d, a, b, x[k + 3], S23, 4107603335);
+    b = GG(b, c, d, a, x[k + 8], S24, 1163531501);
+    a = GG(a, b, c, d, x[k + 13], S21, 2850285829);
+    d = GG(d, a, b, c, x[k + 2], S22, 4243563512);
+    c = GG(c, d, a, b, x[k + 7], S23, 1735328473);
+    b = GG(b, c, d, a, x[k + 12], S24, 2368359562);
+    a = HH(a, b, c, d, x[k + 5], S31, 4294588738);
+    d = HH(d, a, b, c, x[k + 8], S32, 2272392833);
+    c = HH(c, d, a, b, x[k + 11], S33, 1839030562);
+    b = HH(b, c, d, a, x[k + 14], S34, 4259657740);
+    a = HH(a, b, c, d, x[k + 1], S31, 2763975236);
+    d = HH(d, a, b, c, x[k + 4], S32, 1272893353);
+    c = HH(c, d, a, b, x[k + 7], S33, 4139469664);
+    b = HH(b, c, d, a, x[k + 10], S34, 3200236656);
+    a = HH(a, b, c, d, x[k + 13], S31, 681279174);
+    d = HH(d, a, b, c, x[k + 0], S32, 3936430074);
+    c = HH(c, d, a, b, x[k + 3], S33, 3572445317);
+    b = HH(b, c, d, a, x[k + 6], S34, 76029189);
+    a = HH(a, b, c, d, x[k + 9], S31, 3654602809);
+    d = HH(d, a, b, c, x[k + 12], S32, 3873151461);
+    c = HH(c, d, a, b, x[k + 15], S33, 530742520);
+    b = HH(b, c, d, a, x[k + 2], S34, 3299628645);
+    a = II(a, b, c, d, x[k + 0], S41, 4096336452);
+    d = II(d, a, b, c, x[k + 7], S42, 1126891415);
+    c = II(c, d, a, b, x[k + 14], S43, 2878612391);
+    b = II(b, c, d, a, x[k + 5], S44, 4237533241);
+    a = II(a, b, c, d, x[k + 12], S41, 1700485571);
+    d = II(d, a, b, c, x[k + 3], S42, 2399980690);
+    c = II(c, d, a, b, x[k + 10], S43, 4293915773);
+    b = II(b, c, d, a, x[k + 1], S44, 2240044497);
+    a = II(a, b, c, d, x[k + 8], S41, 1873313359);
+    d = II(d, a, b, c, x[k + 15], S42, 4264355552);
+    c = II(c, d, a, b, x[k + 6], S43, 2734768916);
+    b = II(b, c, d, a, x[k + 13], S44, 1309151649);
+    a = II(a, b, c, d, x[k + 4], S41, 4149444226);
+    d = II(d, a, b, c, x[k + 11], S42, 3174756917);
+    c = II(c, d, a, b, x[k + 2], S43, 718787259);
+    b = II(b, c, d, a, x[k + 9], S44, 3951481745);
+    a = addUnsigned(a, AA);
+    b = addUnsigned(b, BB);
+    c = addUnsigned(c, CC);
+    d = addUnsigned(d, DD);
+  }
+  return (wordToHex(a) + wordToHex(b) + wordToHex(c) + wordToHex(d)).toLowerCase();
+}
+
 
 function buildHeaders(user) {
   return {
