@@ -1,0 +1,34 @@
+{
+  "id": "Leiyiyan.sub",
+  "name": "Leiyiyan脚本订阅",
+  "author": "@leiyiyan",
+  "icon": "",
+  "repo": "",
+  "apps": [
+    {
+      "id": "Wanxiang",
+      "name": "一点万象",
+      "author": "@zhenyuefu",
+      "repo": "",
+      "icons": [],
+      "keys": ["is_debug", "ydwx_data"],
+      "settings": [
+        {
+          "id": "is_debug",
+          "name": "开启调试模式",
+          "val": false,
+          "type": "boolean",
+          "desc": "默认关闭"
+        },
+        {
+          "id": "ydwx_data",
+          "name": "一点万象Token",
+          "val": null,
+          "type": "textarea",
+          "autoGrow": true,
+          "desc": "一点万象Token"
+        }
+      ]
+    }
+  ]
+}
