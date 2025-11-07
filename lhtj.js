@@ -1,7 +1,7 @@
 /*
 ------------------------------------------
 @Author: Leiyiyan
-@Date: 2025-04-14
+@Date: 2025-11-07
 @Description: 龙湖天街小程序签到、抽奖
 ------------------------------------------
 获取 Cookie：打开龙湖天街小程序，进入 我的 - 签到赚珑珠 - 任务赚奖励 - 马上签到。
@@ -41,10 +41,10 @@ const baseUrl = "";
 const _headers = {};
 
 const LOTTERY_CONFIG = {
-  componentNo: "CW14Q15G29N9XGEK",
-  activityNo: "AP25A092888WHW70",
-  componentNo_APP: "C014H34A01K2WRG0",
-  activityNo_APP: "AP25J092S80DGLZJ",
+  componentNo: "CY11Z39U03D7BWLF",
+  activityNo: "AP253103P1Z9CTCG",
+  componentNo_APP: "CO11336N1003YDLZ",
+  activityNo_APP: "AP25S103D1UP0D95",
   signEndpoint:
     "https://gw2c-hw-open.longfor.com/llt-gateway-prod/api/v1/activity/auth/lottery/sign",
   clickEndpoint:
