@@ -41,10 +41,10 @@ const baseUrl = "";
 const _headers = {};
 
 const LOTTERY_CONFIG = {
-  componentNo: "CY11Z39U03D7BWLF",
-  activityNo: "AP253103P1Z9CTCG",
-  componentNo_APP: "CO11336N1003YDLZ",
-  activityNo_APP: "AP25S103D1UP0D95",
+  componentNo: "CD19U18I26K291GU",
+  activityNo: "AP25T112V6099DOB",
+  componentNo_APP: "CF19Z15Q58X4O6T0",
+  activityNo_APP: "AP255112Z6RBXVEY",
   signEndpoint:
     "https://gw2c-hw-open.longfor.com/llt-gateway-prod/api/v1/activity/auth/lottery/sign",
   clickEndpoint:
