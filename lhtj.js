@@ -43,8 +43,8 @@ const _headers = {};
 const LOTTERY_CONFIG = {
   componentNo: "CO13545A08P7EI9Y",
   activityNo: "AP25O123K1HEE8DB",
-  componentNo_APP: "CU15A06D41Y9ZECJ",
-  activityNo_APP: "AP260010Y6WP4KCV",
+  componentNo_APP: "CV16H24J49G1KERU",
+  activityNo_APP: "AP266012H9Q69JHI",
   signEndpoint:
     "https://gw2c-hw-open.longfor.com/llt-gateway-prod/api/v1/activity/auth/lottery/sign",
   clickEndpoint:
