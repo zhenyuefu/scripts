@@ -121,13 +121,13 @@ async function main() {
       if (!$.ckStatus) break;
       const rewardNum = await signin(user, channel);
       totalReward += Number.isFinite(Number(rewardNum)) ? Number(rewardNum) : 0;
-      if (channel.key != "app") continue;
-      if (!$.ckStatus) break;
-      const { shouldDraw } = await lotterySignin(user, channel);
-      if ($.ckStatus && shouldDraw) {
-        await $.wait(1000);
-        await lotteryClock(user, channel);
-      }
+      // if (channel.key != "app") continue;
+      // if (!$.ckStatus) break;
+      // const { shouldDraw } = await lotterySignin(user, channel);
+      // if ($.ckStatus && shouldDraw) {
+      //   await $.wait(1000);
+      //   await lotteryClock(user, channel);
+      // }
     }
 
     if ($.ckStatus) {
