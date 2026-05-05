@@ -2,9 +2,9 @@
 ------------------------------------------
 @Author: Leiyiyan
 @Date: 2025-11-07
-@Description: 龙湖天街小程序签到、抽奖
+@Description: 龙湖天街小程序/App签到、抽奖
 ------------------------------------------
-获取 Cookie：打开龙湖天街小程序，进入 我的 - 签到赚珑珠 - 任务赚奖励 - 马上签到。
+获取 Cookie：打开龙湖天街小程序或 App，进入 我的 - 签到赚珑珠 - 任务赚奖励 - 马上签到。
 
 图标：https://raw.githubusercontent.com/leiyiyan/resource/main/icons/lhtj.png
 ================ Loon 配置 ================
@@ -58,6 +58,10 @@ const userAgent = {
 };
 
 const SIGN_CONFIG = {
+  endpoint:
+    "https://gw2c-hw-open.longfor.com/lmarketing-task-api-mvc-prod/openapi/task/v1/signature/clock",
+  pageInfoEndpoint:
+    "https://gw2c-hw-open.longfor.com/lmarketing-task-api-mvc-prod/openapi/task/v1/signature/page-info",
   activityNo: "11111111111686241863606037740000",
   activityNo_APP: "11111111111736501868255956070000",
 };
@@ -66,6 +70,9 @@ const CHANNEL_CONFIGS = [
   {
     key: "miniProgram",
     label: "小程序",
+    channel: "C2",
+    buCode: "C20400",
+    dxRiskSource: "5",
     signActivityNo: SIGN_CONFIG.activityNo,
     lotteryActivityNo: LOTTERY_CONFIG.activityNo,
     lotteryComponentNo: LOTTERY_CONFIG.componentNo,
@@ -73,6 +80,9 @@ const CHANNEL_CONFIGS = [
   {
     key: "app",
     label: "App",
+    channel: "L0",
+    buCode: "L00602",
+    dxRiskSource: "2",
     signActivityNo: SIGN_CONFIG.activityNo_APP,
     lotteryActivityNo: LOTTERY_CONFIG.activityNo_APP,
     lotteryComponentNo: LOTTERY_CONFIG.componentNo_APP,
@@ -94,7 +104,7 @@ const fetch = async (o) => {
       res,
       o?.url?.replace(/\/+$/, "").substring(o?.url?.lastIndexOf("/") + 1),
     );
-    if (res?.message.match(/登录已过期|用户未登录/))
+    if (res?.message?.match(/登录已过期|用户未登录/))
       throw new Error(`用户需要去登录`);
     return res;
   } catch (e) {
@@ -102,13 +112,81 @@ const fetch = async (o) => {
     $.log(`⛔️ 请求发起失败！${e}`);
   }
 };
+
+function compactObject(obj) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined && value !== ""),
+  );
+}
+
+function getChannelByKey(key) {
+  return CHANNEL_CONFIGS.find((channel) => channel.key === key);
+}
+
+function getChannelByActivityNo(activityNo) {
+  return CHANNEL_CONFIGS.find(
+    (channel) => channel.signActivityNo === activityNo,
+  );
+}
+
+function detectChannel(user = {}) {
+  if (user.signClient) return getChannelByKey(user.signClient);
+  if (user.activityNo) {
+    const channel = getChannelByActivityNo(user.activityNo);
+    if (channel) return channel;
+  }
+
+  const userAgentText = user.userAgent || "";
+  if (userAgentText.includes("MAIAWebKit_iOS_com.longfor.supera"))
+    return getChannelByKey("app");
+  if (
+    userAgentText.includes("MicroMessenger") ||
+    userAgentText.includes("miniProgram")
+  )
+    return getChannelByKey("miniProgram");
+
+  return CHANNEL_CONFIGS.find(
+    (channel) =>
+      channel.channel === user["x-lf-channel"] ||
+      channel.buCode === user["x-lf-bu-code"] ||
+      channel.dxRiskSource === user["x-lf-dxrisk-source"],
+  );
+}
+
+function getSignChannels(user) {
+  const channel = detectChannel(user);
+  return channel ? [channel] : CHANNEL_CONFIGS;
+}
+
+function buildSignHeaders(user, channel, { includeDxRisk = true } = {}) {
+  const userAgentKey = channel?.key || "miniProgram";
+  const headers = {
+    Cookie: user.cookie,
+    "User-Agent": user.userAgent || userAgent[userAgentKey] || userAgent.miniProgram,
+    Accept: "application/json, text/plain, */*",
+    token: user.token,
+    "X-GAIA-API-KEY": "c06753f1-3e68-437d-b592-b94656ea5517",
+    "X-LF-Bu-Code": user["x-lf-bu-code"] || channel?.buCode,
+    "X-LF-Channel": user["x-lf-channel"] || channel?.channel,
+    Origin: "https://longzhu.longfor.com",
+    Referer: "https://longzhu.longfor.com/",
+    "X-LF-UserToken": user["x-lf-usertoken"] || user.token,
+  };
+  if (includeDxRisk) {
+    headers["X-LF-DXRisk-Token"] = user["x-lf-dxrisk-token"];
+    headers["X-LF-DXRisk-Source"] =
+      user["x-lf-dxrisk-source"] || channel?.dxRiskSource;
+    headers["X-LF-DXRisk-Captcha-Token"] = "undefined";
+  }
+  return compactObject(headers);
+}
+
 async function main() {
   //check accounts
   if (!userCookie?.length) throw new Error("找不到可用的帐户");
   $.log(`⚙️ 发现 ${userCookie?.length ?? 0} 个帐户\n`);
-  const index = 0;
   //doTask of userList
-  for (const user of userCookie) {
+  for (const [index, user] of userCookie.entries()) {
     //init of user
     $.log(`🚀 开始任务`);
     $.notifyMsg = [];
@@ -117,7 +195,7 @@ async function main() {
     $.avatar = "";
 
     let totalReward = 0;
-    for (const channel of CHANNEL_CONFIGS) {
+    for (const channel of getSignChannels(user)) {
       if (!$.ckStatus) break;
       const rewardNum = await signin(user, channel);
       totalReward += Number.isFinite(Number(rewardNum)) ? Number(rewardNum) : 0;
@@ -133,9 +211,9 @@ async function main() {
     if ($.ckStatus) {
       //查询用户信息
       const { nick_name, growth_value, level, head_portrait } =
-        await getUserInfo(user);
+        (await getUserInfo(user)) || {};
       //查询珑珠
-      const { balance } = await getBalance(user);
+      const { balance } = (await getBalance(user)) || {};
       $.avatar = head_portrait;
       $.title = `本次运行共获得${totalReward}积分`;
       DoubleLog(
@@ -152,24 +230,13 @@ async function main() {
 //签到
 async function signin(user, channel = CHANNEL_CONFIGS[0]) {
   try {
-    const userAgentKey = channel?.key || "miniProgram";
     const activityNo = channel?.signActivityNo || SIGN_CONFIG.activityNo;
     const labelPrefix = channel?.label ? `[${channel.label}] ` : "";
+    await signinPageInfo(user, channel);
+    if (!$.ckStatus) return 0;
     const opts = {
-      url: "https://gw2c-hw-open.longfor.com/lmarketing-task-api-mvc-prod/openapi/task/v1/signature/clock",
-      headers: {
-        cookie: user.cookie,
-        "user-agent": userAgent[userAgentKey] || userAgent.miniProgram,
-        token: user.token,
-        "x-lf-dxrisk-token": user["x-lf-dxrisk-token"],
-        "x-gaia-api-key": "c06753f1-3e68-437d-b592-b94656ea5517",
-        "x-lf-bu-code": user["x-lf-bu-code"],
-        "x-lf-channel": user["x-lf-channel"],
-        origin: "https://longzhu.longfor.com",
-        referer: "https://longzhu.longfor.com/",
-        "x-lf-dxrisk-source": user["x-lf-dxrisk-source"],
-        "x-lf-usertoken": user["x-lf-usertoken"],
-      },
+      url: SIGN_CONFIG.endpoint,
+      headers: buildSignHeaders(user, channel),
       type: "post",
       dataType: "json",
       body: {
@@ -177,6 +244,11 @@ async function signin(user, channel = CHANNEL_CONFIGS[0]) {
       },
     };
     const res = await fetch(opts);
+    if (!$.ckStatus) return 0;
+    if (res?.code && res.code !== "0000") {
+      $.log(`⛔️ ${labelPrefix}每日签到: ${res.message || "未知返回"}\n`);
+      return 0;
+    }
     const reward_num =
       res?.data?.is_popup === 1 ? res?.data?.reward_info[0]?.reward_num : 0;
     $.log(
@@ -191,6 +263,20 @@ async function signin(user, channel = CHANNEL_CONFIGS[0]) {
     $.log(`⛔️ 每日签到失败！${e}\n`);
     return 0;
   }
+}
+
+async function signinPageInfo(user, channel = CHANNEL_CONFIGS[0]) {
+  const activityNo = channel?.signActivityNo || SIGN_CONFIG.activityNo;
+  const opts = {
+    url: SIGN_CONFIG.pageInfoEndpoint,
+    headers: buildSignHeaders(user, channel, { includeDxRisk: false }),
+    type: "post",
+    dataType: "json",
+    body: {
+      activity_no: activityNo,
+    },
+  };
+  return fetch(opts);
 }
 
 function buildLotteryHeaders(user, channel = CHANNEL_CONFIGS[0]) {
@@ -310,7 +396,7 @@ async function getUserInfo(user) {
     $.log(
       `🎉 ${res?.code === "0000" ? `您当前成长值: ${growth_value}` : res?.message}\n`,
     );
-    return res?.data;
+    return res?.data || {};
   } catch (e) {
     $.log(`⛔️ 查询用户信息失败！${e}\n`);
   }
@@ -336,25 +422,45 @@ async function getBalance(user) {
       },
     };
     const res = await fetch(opts);
-    const balance = res?.data.balance || 0;
-    const expiring_lz = res?.data.expiring_lz || 0;
+    const balance = res?.data?.balance || 0;
+    const expiring_lz = res?.data?.expiring_lz || 0;
     $.log(
       `🎉 ${res?.code === "0000" ? `您当前珑珠: ${balance}, 即将过期: ${expiring_lz}` : res?.message}\n`,
     );
-    return res?.data;
+    return res?.data || {};
   } catch (e) {
     $.log(`⛔️ 查询用户珑珠失败！${e}\n`);
   }
 }
+
+function parseRequestBody(body) {
+  if (!body) return {};
+  if (typeof body === "object") return body;
+  return $.toObj(body) || {};
+}
+
 //获取Cookie
 async function getCookie() {
   if ($request && $request.method === "OPTIONS") return;
 
   const header = ObjectKeys2LowerCase($request.headers);
   if (!header.cookie) throw new Error("获取Cookie错误，值为空");
+  const body = parseRequestBody($request.body);
+  const channel =
+    getChannelByActivityNo(body?.activity_no) ||
+    detectChannel({
+      userAgent: header["user-agent"],
+      "x-lf-channel": header["x-lf-channel"],
+      "x-lf-bu-code": header["x-lf-bu-code"],
+      "x-lf-dxrisk-source": header["x-lf-dxrisk-source"],
+    }) ||
+    CHANNEL_CONFIGS[0];
 
   const newData = {
-    userName: "微信用户",
+    userName: channel.key === "app" ? "App用户" : "微信用户",
+    signClient: channel.key,
+    activityNo: body?.activity_no || channel.signActivityNo,
+    userAgent: header["user-agent"],
     "x-lf-dxrisk-token": header["x-lf-dxrisk-token"],
     "x-lf-channel": header["x-lf-channel"],
     token: header.token,
@@ -363,10 +469,13 @@ async function getCookie() {
     "x-lf-bu-code": header["x-lf-bu-code"],
     "x-lf-dxrisk-source": header["x-lf-dxrisk-source"],
   };
-  const index = userCookie.findIndex((e) => e.token == newData.token);
+  const index = userCookie.findIndex((e) => {
+    const signClient = e.signClient || detectChannel(e)?.key;
+    return e.token == newData.token && signClient === newData.signClient;
+  });
   index !== -1 ? (userCookie[index] = newData) : userCookie.push(newData);
   $.setjson(userCookie, ckName);
-  $.msg($.name, `🎉获取Cookie成功!`, ``);
+  $.msg($.name, `🎉获取${channel.label}Cookie成功!`, ``);
 }
 
 //主程序执行入口
