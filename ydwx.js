@@ -23,7 +23,7 @@ hostname = app.mixcapp.com
 
 cron "1 0 * * *" script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js, tag=一点万象签到
 
-http-request ^https?:\/\/app\.mixcapp\.com\/mixc\/gateway script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/lhtj.js,requires-body=true, timeout=60, tag=龙湖天街获取Cookie
+http-request ^https?:\/\/app\.mixcapp\.com\/mixc\/gateway script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js,requires-body=true, timeout=60, tag=获取Cookie
 
 ⚠️【免责声明】
 ------------------------------------------
