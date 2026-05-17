@@ -17,6 +17,14 @@ hostname = app.mixcapp.com
 [rewrite_local]
 ^https?:\/\/app\.mixcapp\.com\/mixc\/gateway url script-request-body https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js
 
+================ Loon 配置 ================
+[MITM]
+hostname = app.mixcapp.com
+
+cron "1 0 * * *" script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/ydwx.js, tag=一点万象签到
+
+http-request ^https?:\/\/app\.mixcapp\.com\/mixc\/gateway script-path=https://raw.githubusercontent.com/zhenyuefu/scripts/main/lhtj.js,requires-body=true, timeout=60, tag=龙湖天街获取Cookie
+
 ⚠️【免责声明】
 ------------------------------------------
 1、此脚本仅用于学习研究，不保证其合法性、准确性、有效性，请根据情况自行判断，本人对此不承担任何保证责任。
